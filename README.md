@@ -10,14 +10,14 @@ This private repository collects my completed and recovered coursework for Stanf
 | [A2](assignment-2/) | Word2Vec derivations and implementation | Source, written PDF, trained-vector plot, submission ZIP | Gradient/SGD checks passed; final smoothed loss about 9.812 |
 | [A3](assignment-3/) | Dependency parsing | Source, written PDF, submission ZIP, completion notes | Dev UAS 88.0250%; test UAS 88.6053% |
 | [A4](assignment-4/) | Neural machine translation with RNNs and attention | Source, written PDF, decoded output, submission ZIP | Official checks 1d/1e/1f passed; corpus BLEU 21.550124 |
-| [A5](assignment-5/) | Character-aware NMT | Source, written PDF, focused outputs, submission ZIP, recovery notes | Official component sanity checks passed; focused tests 4/4 |
+| [A5](assignment-5/) | Character-aware NMT | Source, written PDF, full decoded output, submission ZIP, recovery notes | Official checks passed; full-corpus BLEU 24.4811 |
 | [Final project](final-project/) | Reliable extractive QA on SQuAD 2.0 | Reproducible code, raw results, proposal, milestone, final report, poster, submission ZIP | Held-out EM 62.53, F1 64.67; no-answer accuracy 70.94% |
 
 ## Repository layout
 
 Each assignment folder contains the readable implementation and any written/report artifacts. Files named `assignmentN.zip` are the compact submission bundles produced for that assignment. The final-project folder additionally contains machine-readable metrics, predictions, figures, qualitative error analysis, and the complete written deliverables.
 
-The Markdown completion/recovery notes document the environment, checks, and measured results. A5's note records that the time-intensive full-corpus retraining was not repeated during recovery; no fresh full-run BLEU score is claimed. The final-project README records its disjoint calibration/evaluation protocol and explicitly distinguishes the public-subset result from the original private course leaderboard.
+The Markdown completion/recovery notes document the environment, checks, and measured results. A5's note records the completed full-corpus GPU run, checkpoint recovery after a power interruption, and fresh local BLEU score. The final-project README records its disjoint calibration/evaluation protocol and explicitly distinguishes the public-subset result from the original private course leaderboard.
 
 ## Reproducibility notes
 

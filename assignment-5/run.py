@@ -40,6 +40,11 @@ Options:
     --dropout=<float>                       dropout [default: 0.3]
     --max-decoding-time-step=<int>          maximum number of decoding time steps [default: 70]
     --no-char-decoder                       do not use the character decoder
+    --resume-from=<file>                    resume training from a saved model checkpoint
+    --start-epoch=<int>                     epoch number stored by the checkpoint [default: 0]
+    --start-iter=<int>                      iteration number stored by the checkpoint [default: 0]
+    --best-dev-ppl=<float>                  best dev perplexity stored by the checkpoint
+    --num-trial=<int>                       learning-rate trials already used [default: 0]
 """
 import math
 import sys
@@ -125,14 +130,19 @@ def train(args: Dict):
 
     vocab = Vocab.load(args['--vocab'])
 
-    model = NMT(embed_size=int(args['--embed-size']),
-                hidden_size=int(args['--hidden-size']),
-                dropout_rate=float(args['--dropout']),
-                vocab=vocab, no_char_decoder=args['--no-char-decoder'])
+    resume_from = args.get('--resume-from')
+    if resume_from:
+        print('resume model from [%s]' % resume_from, file=sys.stderr)
+        model = NMT.load(resume_from, no_char_decoder=args['--no-char-decoder'])
+    else:
+        model = NMT(embed_size=int(args['--embed-size']),
+                    hidden_size=int(args['--hidden-size']),
+                    dropout_rate=float(args['--dropout']),
+                    vocab=vocab, no_char_decoder=args['--no-char-decoder'])
     model.train()
 
     uniform_init = float(args['--uniform-init'])
-    if np.abs(uniform_init) > 0.:
+    if not resume_from and np.abs(uniform_init) > 0.:
         print('uniformly initialize parameters [-%f, +%f]' % (uniform_init, uniform_init), file=sys.stderr)
         for p in model.parameters():
             p.data.uniform_(-uniform_init, uniform_init)
@@ -146,11 +156,22 @@ def train(args: Dict):
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=float(args['--lr']))
+    if resume_from:
+        optimizer_path = resume_from + '.optim'
+        print('resume optimizer from [%s]' % optimizer_path, file=sys.stderr)
+        optimizer.load_state_dict(torch.load(
+            optimizer_path,
+            map_location=device,
+            weights_only=False,
+        ))
 
-    num_trial = 0
-    train_iter = patience = cum_loss = report_loss = cum_tgt_words = report_tgt_words = 0
-    cum_examples = report_examples = epoch = valid_num = 0
-    hist_valid_scores = []
+    num_trial = int(args.get('--num-trial') or 0)
+    train_iter = int(args.get('--start-iter') or 0)
+    epoch = int(args.get('--start-epoch') or 0)
+    patience = cum_loss = report_loss = cum_tgt_words = report_tgt_words = 0
+    cum_examples = report_examples = valid_num = 0
+    best_dev_ppl = args.get('--best-dev-ppl')
+    hist_valid_scores = [-float(best_dev_ppl)] if best_dev_ppl else []
     train_time = begin_time = time.time()
     print('begin Maximum Likelihood training')
 

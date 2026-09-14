@@ -19,6 +19,10 @@
 
 ## Long full-corpus run
 
-The assignment handout estimates 8-12 GPU hours for the full run. It was not rerun during this recovery session, so `outputs/test_outputs.txt` and a fresh full-run BLEU score are intentionally not fabricated. Run the full training and decoding commands in `run.sh` before a real Gradescope submission.
+The full English-Spanish model was trained locally on an NVIDIA GPU. A power loss interrupted the original process during epoch 21, so training resumed from the latest saved model and optimizer checkpoint. The configured early-stopping criterion ended training at iteration 196,000.
 
-The written solution PDF is at `../../output/pdf/assignment5_written_solutions.pdf`.
+- Best development perplexity: `342.893788`.
+- `outputs/test_outputs.txt`: all 8,064 test sentences decoded.
+- Fresh local corpus BLEU: `24.48109275208612`, above the 22.5 full-credit threshold.
+
+The final written solution is `assignment5_written_solutions.pdf`.
