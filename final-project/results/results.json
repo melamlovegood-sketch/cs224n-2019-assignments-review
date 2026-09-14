@@ -1,0 +1,115 @@
+{
+  "config": {
+    "model_name": "distilbert/distilbert-base-cased-distilled-squad",
+    "train_size": 12000,
+    "validation_size": 3000,
+    "calibration_size": 1500,
+    "max_length": 256,
+    "doc_stride": 64,
+    "max_answer_length": 30,
+    "n_best_size": 20,
+    "train_batch_size": 12,
+    "eval_batch_size": 24,
+    "gradient_accumulation_steps": 2,
+    "epochs": 2,
+    "learning_rate": 3e-05,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.1,
+    "seed": 224,
+    "output_dir": "project"
+  },
+  "environment": {
+    "python": "3.13.7",
+    "torch": "2.10.0+cu128",
+    "transformers": "5.17.0",
+    "datasets": "5.0.1",
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU"
+  },
+  "dataset": {
+    "name": "rajpurkar/squad_v2",
+    "train_examples": 12000,
+    "train_features": 13322,
+    "calibration_examples": 1500,
+    "calibration_features": 1690,
+    "evaluation_examples": 1500,
+    "evaluation_features": 1683
+  },
+  "timing_seconds": {
+    "baseline_evaluation": 11.48931884765625,
+    "training": 273.96381521224976,
+    "fine_tuned_evaluation": 14.985158205032349
+  },
+  "baseline": {
+    "label": "SQuAD 1.1 checkpoint",
+    "threshold": -23.203125,
+    "calibration_metrics": {
+      "exact_match": 56.46666666666667,
+      "f1": 57.89277648926771,
+      "answerable_exact_match": 44.44444444444444,
+      "answerable_f1": 47.27402742579573,
+      "unanswerable_accuracy": 68.68279569892474,
+      "count": 1500,
+      "answerable_count": 756,
+      "unanswerable_count": 744,
+      "calibration_objective_f1": 57.89277648926769,
+      "calibration_objective_exact_match": 56.46666666666667
+    },
+    "default_metrics": {
+      "exact_match": 38.0,
+      "f1": 41.792640205467706,
+      "answerable_exact_match": 76.71601615074024,
+      "answerable_f1": 84.37275949959833,
+      "unanswerable_accuracy": 0.0,
+      "count": 1500,
+      "answerable_count": 743,
+      "unanswerable_count": 757
+    },
+    "calibrated_metrics": {
+      "exact_match": 56.2,
+      "f1": 57.50606568411521,
+      "answerable_exact_match": 43.472409152086136,
+      "answerable_f1": 46.10915010252065,
+      "unanswerable_accuracy": 68.69220607661823,
+      "count": 1500,
+      "answerable_count": 743,
+      "unanswerable_count": 757
+    }
+  },
+  "fine_tuned": {
+    "label": "SQuAD 2.0 fine-tuned",
+    "threshold": -1.828125,
+    "calibration_metrics": {
+      "exact_match": 63.333333333333336,
+      "f1": 65.71711761206667,
+      "answerable_exact_match": 55.55555555555556,
+      "answerable_f1": 60.28528626732818,
+      "unanswerable_accuracy": 71.23655913978494,
+      "count": 1500,
+      "answerable_count": 756,
+      "unanswerable_count": 744,
+      "calibration_objective_f1": 65.71711761206667,
+      "calibration_objective_exact_match": 63.333333333333336
+    },
+    "default_metrics": {
+      "exact_match": 61.266666666666666,
+      "f1": 63.915218432563094,
+      "answerable_exact_match": 62.18034993270525,
+      "answerable_f1": 67.52735888135221,
+      "unanswerable_accuracy": 60.36988110964333,
+      "count": 1500,
+      "answerable_count": 743,
+      "unanswerable_count": 757
+    },
+    "calibrated_metrics": {
+      "exact_match": 62.53333333333333,
+      "f1": 64.67424979885763,
+      "answerable_exact_match": 53.97039030955585,
+      "answerable_f1": 58.29256352393872,
+      "unanswerable_accuracy": 70.93791281373844,
+      "count": 1500,
+      "answerable_count": 743,
+      "unanswerable_count": 757
+    }
+  }
+}

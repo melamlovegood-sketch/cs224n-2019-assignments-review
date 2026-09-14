@@ -18,7 +18,14 @@ env/
 *.weights
 *.pt
 *.pth
+*.safetensors
 saved_params_*.npy
+
+# Final-project model/tokenizer downloads and regenerated reports
+final-project/project/model/
+final-project/model/
+final-project/tmp_render*/
+final-project/tmp_text*/
 
 # Datasets copied outside curated submission archives
 data/

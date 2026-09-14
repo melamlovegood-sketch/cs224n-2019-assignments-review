@@ -1,0 +1,5 @@
+This is a single-contributor independent course-study project. The contributor
+restored the starter repository; designed and implemented the modern SQuAD 2.0
+pipeline; ran all training, evaluation, calibration, and error analysis; and
+prepared the proposal, milestone, final report, poster, and reproducibility
+package.
