@@ -1,0 +1,161 @@
+\documentclass[10pt]{article}
+\usepackage[letterpaper,margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{array,booktabs,tabularx}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.42em}
+\setlist[itemize]{topsep=0.2em,itemsep=0.25em}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+\begin{center}
+{\Large\bfseries CS 224n Assignment 4}\\[0.25em]
+{\large Neural Machine Translation with RNNs and Attention}
+\end{center}
+\vspace{0.35em}
+
+\section{Neural Machine Translation with RNNs}
+
+\subsection*{1(g) Encoder sentence masks}
+
+Immediately before the softmax, every attention score corresponding to a source \code{<pad>} position is replaced by $-\infty$. Consequently, softmax assigns those positions probability zero, and their encoder states make no contribution to the attention-weighted vector $a_t$. The remaining probability mass is normalized only over real source tokens.
+
+This is necessary because batches contain artificial padding. Without the mask, the decoder could attend to padding states, producing length-dependent noise and wasting probability mass on positions that contain no linguistic information.
+
+\subsection*{1(i) Corpus BLEU}
+
+Decoding the 8,064-sentence test set and scoring the translations against \code{en\_es\_data/test.en} gives:
+
+\[
+\boxed{\text{Corpus BLEU} = 21.550124}
+\]
+
+This exceeds the required score of 21. The output used for scoring is saved as \code{outputs/test\_outputs.txt}.
+
+\subsection*{1(j) Attention mechanisms}
+
+\begin{tabularx}{\textwidth}{>{\bfseries}p{0.17\textwidth} X X}
+\toprule
+Mechanism & One advantage & One disadvantage \\
+\midrule
+Dot product & It has no learned scoring parameters and can be implemented as a highly efficient batched matrix multiplication. & Encoder and decoder states must have compatible dimensions, and unscaled dot products can become large in high dimensions, making softmax overly sharp. \\
+\addlinespace
+Multiplicative & The learned matrix $W$ can align different encoder and decoder representation spaces and can also map different dimensions. & It adds parameters and matrix multiplication cost compared with plain dot-product attention. \\
+\addlinespace
+Additive & Its learned nonlinear scoring function is flexible and can compare states from different representation spaces; it often works well at modest hidden sizes. & It requires more parameters and per-pair operations, so it is generally slower and less parallel-friendly than dot-product attention. \\
+\bottomrule
+\end{tabularx}
+
+\section{Analyzing NMT Systems}
+
+\subsection*{2(a) Analysis of supplied translation errors}
+
+\textbf{(i) Over-translation and repetition.}
+The phrase ``another favorite of my favorites'' repeats the meaning of \emph{favorite}; the intended phrase is ``another one of my favorites.'' The attention-based recurrent decoder has no explicit coverage mechanism, so it can translate the same source content more than once. A coverage vector or coverage penalty during decoding could discourage repeated attention to already translated source positions.
+
+\textbf{(ii) Morphology and word-order error.}
+The output ``the author for children, more reading'' is ungrammatical and fails to render \emph{mas leido} as the superlative passive phrase ``most widely read.'' The model has difficulty with Spanish morphology and with a long-distance English reordering in this long sentence. Subword representations, more examples of this construction, and a stronger contextual encoder such as a Transformer would make the relevant morphological and syntactic pattern easier to learn.
+
+\textbf{(iii) Out-of-vocabulary proper name.}
+The surname ``Bolingbroke'' becomes \code{<unk>}. A fixed word-level vocabulary cannot generate a rare name that was absent or below the frequency threshold in training. Byte-pair encoding, another subword vocabulary, or character-level generation would allow the model to copy or compose unseen names.
+
+\textbf{(iv) Lexical ambiguity and an idiom.}
+The model translates \emph{manzana} as ``apple'' even though \emph{dar vuelta a la manzana} means ``go around the block.'' The word-level model selected a frequent isolated sense rather than recognizing the multiword expression. Training on more idiomatic examples, using phrase-aware contextual representations, or adding an idiom lexicon could favor the contextually correct sense.
+
+\textbf{(v) Multiword expression and domain confusion.}
+The phrase \emph{sala de profesores} should be ``teachers' lounge,'' but the model produces ``women's room.'' The decoder appears to overuse the bathroom context and fails to preserve the compound meaning of the room name. More parallel examples of institutional room names, subword/phrase-aware modeling, or terminology constraints at decoding time could correct this error.
+
+\textbf{(vi) Numerical and world-knowledge error.}
+The system changes ``hectares'' to ``acres'' but copies 100,000 instead of converting it to roughly 250,000. Standard sequence models treat numerals mostly as tokens and do not reliably perform arithmetic or unit conversion. A number-aware module or a deterministic unit-conversion postprocessor could convert the value and unit together.
+
+\subsection*{2(b) Two additional errors from the test output}
+
+\textbf{Example 1: dropped subject gender.}
+
+\begin{itemize}
+  \item \textbf{Source:} Lo haca en secreto,
+  \item \textbf{Reference:} She did it in secret.
+  \item \textbf{Model:} He did it in secret it.
+  \item \textbf{Error:} The translation changes the discourse referent from female to male.
+  \item \textbf{Reason:} Spanish permits omitted subjects, and the local verb form does not mark gender. The sentence-level model lacks the preceding discourse needed to recover the referent.
+  \item \textbf{Possible fix:} Translate with document-level context or pass a representation of preceding sentences to the encoder so pronouns can be resolved consistently.
+\end{itemize}
+
+\textbf{Example 2: lost negative question.}
+
+\begin{itemize}
+  \item \textbf{Source:} Porque si todo est hecho de pequeas partculas y todas las pequeas partculas siguen los principios de la mecnica cuntica, entonces No debera todo seguir los principios de la mecnica cuntica?
+  \item \textbf{Reference:} Because if everything is made up of little particles and all the little particles follow quantum mechanics, then shouldn't everything just follow quantum mechanics?
+  \item \textbf{Model:} Because if it's all made of little particles and all the little particles follow the principles of quantum mechanics, then it should not all follow the principles of \texttt{<unk>} mechanics.
+  \item \textbf{Error:} The model turns the negative rhetorical question into an awkward declarative statement and replaces ``quantum'' with an unknown token.
+  \item \textbf{Reason:} The long dependency between the question marker, negation, modal verb, and subject is difficult for a recurrent decoder; attention may focus on nearby content words while dropping low-frequency functional structure.
+  \item \textbf{Possible fix:} A Transformer with stronger long-range dependencies, combined with training examples that emphasize polarity and interrogative constructions, could better preserve the question's scope and subject.
+\end{itemize}
+
+These are distinct from each other and from the supplied examples: the first is a cross-sentence pronoun-resolution error, while the second is a polarity and interrogative-scope error.
+
+\subsection*{2(c) Sentence-level BLEU}
+
+All token counts below are case-insensitive only because every supplied sentence is already lowercased. The weights are $\lambda_1=\lambda_2=0.5$ and $\lambda_3=\lambda_4=0$.
+
+\textbf{(i) Using both references.}
+
+For $c_1=$ ``the love can always do,'' the matching unigrams are \{love, can, always\}, and the matching bigrams are \{love can, can always\}. Thus
+\[
+p_1=\frac{3}{5},\qquad p_2=\frac{2}{4}.
+\]
+Here $c=5$. The reference lengths are 6 and 4; both are distance 1 from $c$, so the shorter tie is selected and $r^*=4$. Since $c\ge r^*$, $BP=1$, giving
+\[
+\operatorname{BLEU}(c_1)=1\cdot\exp\left(\tfrac12\log\tfrac35+\tfrac12\log\tfrac24\right)
+=\sqrt{0.3}=0.547723.
+\]
+
+For $c_2=$ ``love can make anything possible,'' the matching unigrams are \{love, can, anything, possible\}, and the matching bigrams are \{love can, anything possible\}. Therefore
+\[
+p_1=\frac{4}{5},\qquad p_2=\frac{2}{4},\qquad c=5,\qquad r^*=4,\qquad BP=1,
+\]
+and
+\[
+\operatorname{BLEU}(c_2)=\sqrt{\frac45\cdot\frac24}=\sqrt{0.4}=0.632456.
+\]
+BLEU ranks $c_2$ higher. I agree: $c_2$ is grammatical and preserves the meaning that love makes things possible, whereas $c_1$ ends awkwardly with ``do.''
+
+\textbf{(ii) Using only $r_1$.}
+
+Now $r^*=6$ for both candidates, so
+\[
+BP=\exp\left(1-\frac65\right)=e^{-0.2}=0.818731.
+\]
+The counts for $c_1$ remain $p_1=3/5$ and $p_2=2/4$, hence
+\[
+\operatorname{BLEU}(c_1)=0.818731\sqrt{\frac35\cdot\frac24}=0.448437.
+\]
+For $c_2$, only \{love, can\} match as unigrams and only \{love can\} matches as a bigram, so $p_1=2/5$ and $p_2=1/4$. Therefore
+\[
+\operatorname{BLEU}(c_2)=0.818731\sqrt{\frac25\cdot\frac14}=0.258905.
+\]
+With only $r_1$, BLEU now ranks $c_1$ higher. I disagree with that ranking: $c_2$ is still a fluent and accurate paraphrase, but the missing second reference removes the n-grams that recognize it.
+
+\textbf{(iii) Limitation of a single reference.}
+There are usually many valid translations of the same source sentence. A single reference covers only one wording, so a fluent and semantically correct paraphrase can receive a low n-gram score merely because it uses different words or syntax. This makes sentence-level scores noisy and can bias system comparisons toward the style of the lone reference.
+
+\textbf{(iv) BLEU versus human evaluation.}
+
+\textbf{Advantages:}
+\begin{itemize}
+  \item BLEU is automatic, inexpensive, and fast enough to evaluate many systems or checkpoints over a large corpus.
+  \item Given fixed tokenization and references, it is reproducible and provides a standardized numerical comparison without annotator variability.
+\end{itemize}
+
+\textbf{Disadvantages:}
+\begin{itemize}
+  \item N-gram overlap does not directly measure meaning, factual adequacy, discourse consistency, or grammatical acceptability, so it can mis-rank valid paraphrases and serious semantic errors.
+  \item BLEU is sensitive to tokenization, reference coverage, and corpus composition; a single score gives little diagnostic explanation of what a system gets wrong.
+\end{itemize}
+
+\end{document}

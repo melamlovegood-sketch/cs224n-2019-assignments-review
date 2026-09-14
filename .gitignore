@@ -1,0 +1,47 @@
+# Python and notebook caches
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Virtual environments and local settings
+.env
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+
+# Large training artifacts
+*.bin
+*.optim
+*.weights
+*.pt
+*.pth
+saved_params_*.npy
+
+# Datasets copied outside curated submission archives
+data/
+en_es_data/
+sanity_check_en_es_data/
+utils/datasets/
+
+# Logs and temporary outputs
+*.log
+tmp/
+temp/
+
+# LaTeX build intermediates (keep .tex and .pdf)
+*.aux
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*.out
+*.synctex.gz
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+

@@ -1,0 +1,113 @@
+\documentclass[11pt]{article}
+\usepackage[letterpaper,margin=0.8in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{array,booktabs,tabularx}
+\usepackage[hidelinks]{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\newcommand{\bestdev}{88.0250}
+\newcommand{\testuas}{88.6053}
+
+\title{CS 224n Assignment 3: Dependency Parsing\\Written Solutions}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{1. Machine Learning and Neural Networks}
+
+\subsection*{(a) Adam Optimizer}
+
+\textbf{(i) Momentum.}
+The rolling average $m$ smooths minibatch noise because a single unusual gradient contributes only a fraction $1-\beta_1$ of the new direction, while directions that persist across minibatches accumulate. The lower-variance update reduces oscillation, especially in narrow directions of the loss surface, and lets optimization make steadier progress along directions that consistently reduce the loss.
+
+\textbf{(ii) Adaptive learning rates.}
+For parameter $i$, the effective update is proportional to $m_i/\sqrt{v_i}$. Parameters whose gradients have had small historical squared magnitude receive relatively larger updates, whereas parameters with repeatedly large gradients are damped. This rescales coordinates with different gradient magnitudes, helps sparse or infrequently updated parameters learn, and prevents high-variance coordinates from dominating optimization.
+
+\subsection*{(b) Dropout}
+
+\textbf{(i) Scaling factor.}
+Since $d_i\sim\operatorname{Bernoulli}(1-p_{\mathrm{drop}})$,
+\[
+\mathbb E[h_{\mathrm{drop},i}]
+=\mathbb E[\gamma d_i h_i]
+=\gamma(1-p_{\mathrm{drop}})h_i.
+\]
+Setting this equal to $h_i$ gives
+\[
+\boxed{\gamma=\frac{1}{1-p_{\mathrm{drop}}}.}
+\]
+
+\textbf{(ii) Training versus evaluation.}
+During training, random masks regularize the network by preventing units from relying too strongly on particular other units, while inverted-dropout scaling preserves the expected activation. At evaluation time we want a deterministic prediction using the full learned representation, so all units are retained and no additional scaling is needed.
+
+\section*{2. Neural Transition-Based Dependency Parsing}
+
+\subsection*{(a) Transition sequence}
+
+The target dependencies are $\text{parsed}\to\text{I}$, $\text{sentence}\to\text{this}$, $\text{parsed}\to\text{sentence}$, $\text{parsed}\to\text{correctly}$, and $\text{ROOT}\to\text{parsed}$.
+
+\begin{center}
+\scriptsize
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{c >{\raggedright\arraybackslash}p{0.23\textwidth} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{0.17\textwidth} l}
+\toprule
+Step & Stack & Buffer & New dependency & Transition\\
+\midrule
+0 & [ROOT] & [I, parsed, this, sentence, correctly] & -- & Initial\\
+1 & [ROOT, I] & [parsed, this, sentence, correctly] & -- & SHIFT\\
+2 & [ROOT, I, parsed] & [this, sentence, correctly] & -- & SHIFT\\
+3 & [ROOT, parsed] & [this, sentence, correctly] & parsed $\to$ I & LEFT-ARC\\
+4 & [ROOT, parsed, this] & [sentence, correctly] & -- & SHIFT\\
+5 & [ROOT, parsed, this, sentence] & [correctly] & -- & SHIFT\\
+6 & [ROOT, parsed, sentence] & [correctly] & sentence $\to$ this & LEFT-ARC\\
+7 & [ROOT, parsed] & [correctly] & parsed $\to$ sentence & RIGHT-ARC\\
+8 & [ROOT, parsed, correctly] & [] & -- & SHIFT\\
+9 & [ROOT, parsed] & [] & parsed $\to$ correctly & RIGHT-ARC\\
+10 & [ROOT] & [] & ROOT $\to$ parsed & RIGHT-ARC\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection*{(b) Number of parsing steps}
+A sentence with $n$ words requires exactly $\boxed{2n}$ transitions. Every word is shifted from the buffer onto the stack once, giving $n$ SHIFT operations, and every word is removed from the stack once when it receives its unique head, giving $n$ arc operations, including the final attachment to ROOT.
+
+\subsection*{(e) Neural parser results}
+The best development-set UAS was \textbf{\bestdev\%}, and the corresponding model achieved \textbf{\testuas\%} UAS on the test set. The reported test score is computed only after restoring the checkpoint with the highest development-set UAS.
+
+\subsection*{(f) Dependency parse error analysis}
+
+\textbf{(i)}
+\begin{itemize}
+  \item Error type: Verb Phrase Attachment Error
+  \item Incorrect dependency: wedding $\to$ fearing
+  \item Correct dependency: heading $\to$ fearing
+\end{itemize}
+The participial phrase ``fearing my death'' describes the subject while heading, rather than modifying the wedding.
+
+\textbf{(ii)}
+\begin{itemize}
+  \item Error type: Coordination Attachment Error
+  \item Incorrect dependency: makes $\to$ rescue
+  \item Correct dependency: rush $\to$ rescue
+\end{itemize}
+The verbs ``rush'' and ``rescue'' are coordinated by ``and,'' so the second conjunct should attach to the first conjunct.
+
+\textbf{(iii)}
+\begin{itemize}
+  \item Error type: Prepositional Phrase Attachment Error
+  \item Incorrect dependency: named $\to$ Midland
+  \item Correct dependency: guy $\to$ Midland
+\end{itemize}
+The phrase ``in Midland, Texas'' identifies the location of the guy, not the location or state of the loan.
+
+\textbf{(iv)}
+\begin{itemize}
+  \item Error type: Modifier Attachment Error
+  \item Incorrect dependency: elements $\to$ most
+  \item Correct dependency: crucial $\to$ most
+\end{itemize}
+The adverb ``most'' modifies the adjective ``crucial,'' which in turn modifies ``elements.''
+
+\end{document}
